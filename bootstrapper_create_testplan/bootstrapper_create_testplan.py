@@ -1,7 +1,5 @@
 #This script needs 3 arguments: username, password, Build number 
-import os,sys
-import argparse
-import datetime
+import os,sys,argparse,datetime,json
 from testrail import * 
 
 now=datetime.datetime.now()
@@ -17,27 +15,27 @@ build_number=args['build_number']
 username=args['user_name']
 password=args['password']
 
-path='/tmp/'+date+'-'+build_number+'/testrail/'
+path='/tmp/'+date+'_'+build_number+'/testrail/'
 
 access_rights = 0o755
 
-suite_file=open(path+'testsuites.json','r')
+suite_file=open(path+'test.json','r')
 
-suites=suite_file.read()
-suites=json.loads(suites)
-suite_ids=suites['suite_ids']
-suite_id=suite_ids.split(',')
+suites=json.loads(suite_file.read())
+# suite_ids=suites['suite_ids']
+# suite_id=suite_ids.split(',')
 suite_file.close()
 
-print('Suites to be added in the Plan: ')
-for suite in suite_id:
-  print(suite)
 
-client = APIClient('https://cloudbyte.testrail.com')
+print('Suites to be added in the Plan: ')
+
+
+
+client = APIClient('https://openebs.testrail.io')
 client.user = username
 client.password = password
 plan_name=date+'-build-'+build_number
-plan = client.send_post('add_plan/3',
+plan = client.send_post('add_plan/1',
   {'name':plan_name ,'description': 'creating from API call'}
 )
 
@@ -45,11 +43,18 @@ plan = client.send_post('add_plan/3',
 plan_id=str(plan['id'])
 print('Plan created.\nPlan id:',plan_id)
 #Add entries to Plan
-for suite in suite_id:
+for suite in suites['suites']:
+  print(suite['suite_id'])
+
   plan_entry=client.send_post('add_plan_entry/'+plan_id,
-  {'suite_id':suite,'description': 'This Test Plan is Created via bootstrap_create_testplan'}
+  {'suite_id':suite['suite_id'],'description': 'This Test Plan is Created via bootstrap_create_testplan'}
   )
-print('------Added Suites to Plan -----')
+
+# for suite in suite_id:
+#   plan_entry=client.send_post('add_plan_entry/'+plan_id,
+#   {'suite_id':suite,'description': 'This Test Plan is Created via bootstrap_create_testplan'}
+#   )
+# print('------Added Suites to Plan -----')
 
 #Create Directory to Store the result(Test Plan Name and ID)
 result_path=path+'plan-'+str(plan_name)
